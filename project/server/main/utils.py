@@ -14,7 +14,7 @@ def get_ods_data(key):
     current_df = pd.read_csv(f'https://data.enseignementsup-recherche.gouv.fr/explore/dataset/{key}/download/?format=csv&apikey={ODS_API_KEY}', sep=';')
     return current_df
 
-def post_data(data):
+def post_data(data, delete_before):
     projects = data['projects']
     assert(len(projects) == len(set([e['id'] for e in projects])))
     logger.debug(f'{len(projects)} projects to post')
@@ -27,7 +27,7 @@ def post_data(data):
     logger.debug(f'{len(partners)} partners to post')
     nb_post_ok = 0
     for p in partners:
-        nb_post_ok += upload_elt(p, 'participations')
+        nb_post_ok += upload_elt(p, 'participations', delete_before)
     logger.debug(f'{nb_post_ok} OK')
 
 def reset_db(project_type, elt_type):
@@ -48,6 +48,11 @@ def upload_elt(new_elt, elt_type, delete_before = False):
     if delete_before:
         elt_id = new_elt['id']
         old = requests.get(url + f'/{elt_id}', headers={"Authorization":os.getenv('AUTHORIZATION')}).json()
+        etag = old['etag']
+        new_headers = {"Authorization":os.getenv('AUTHORIZATION'), 'If-Match': etag}
+        delete_old = requests.delete(url + f'/{elt_id}', headers=new_headers)
+        if delete_old.status_code != 204:
+            logger.debug(delete_old.text)
     r = requests.post(url, json = new_elt, headers={"Authorization":os.getenv('AUTHORIZATION')})
     if(r.status_code != 201):
         logger.debug(r.text)

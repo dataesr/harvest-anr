@@ -18,11 +18,11 @@ def update_anr(args):
     cache_participant = enrich_cache()
     reset_db_projects_and_partners('ANR')
     new_data_anr = harvest_anr_projects('ANR', cache_participant)
-    post_data(new_data_anr)
+    post_data(data = new_data_anr, delete_before = True)
    
     reset_db_projects_and_partners('PIA')
     new_data_pia = harvest_anr_projects('PIA', cache_participant)
-    post_data(new_data_pia)
+    post_data(data = new_data_pia, delete_before = True)
 
 def get_person_map(df_partners):
     person_map = {}
