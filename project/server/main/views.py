@@ -2,7 +2,7 @@ import redis
 from rq import Queue, Connection
 from flask import render_template, Blueprint, jsonify, request, current_app
 
-from project.server.main.tasks import create_task_update_anr
+from project.server.main.tasks import create_task_update
 
 main_blueprint = Blueprint("main", __name__,)
 from project.server.main.logger import get_logger
@@ -15,12 +15,12 @@ queue_name = "harvest-anr"
 def home():
     return render_template("main/home.html")
 
-@main_blueprint.route("/update_anr", methods=["POST"])
-def run_task_update_anr():
+@main_blueprint.route("/update", methods=["POST"])
+def run_task_update():
     args = request.get_json(force=True)
     with Connection(redis.from_url(current_app.config["REDIS_URL"])):
         q = Queue(queue_name, default_timeout=2160000)
-        task = q.enqueue(create_task_update_anr, args)
+        task = q.enqueue(create_task_update, args)
     response_object = {
         "status": "success",
         "data": {

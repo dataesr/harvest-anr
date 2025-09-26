@@ -14,8 +14,7 @@ URL_ANR_PARTNERS_DGPIE = 'https://www.data.gouv.fr/api/1/datasets/r/559459fb-b94
 
 logger = get_logger(__name__)
 
-def update_anr(args):
-    cache_participant = enrich_cache()
+def update_anr(args, cache_participant):
     reset_db_projects_and_partners('ANR')
     new_data_anr = harvest_anr_projects('ANR', cache_participant)
     post_data(data = new_data_anr, delete_before = True)
@@ -95,7 +94,8 @@ def harvest_anr_projects(project_type, cache_participant):
         new_elt = {}
         new_elt['id'] = e['Projet.Partenaire.Code_Decision_ANR']
         new_elt['project_id'] = e['Projet.Code_Decision_ANR']
-        new_elt['type'] = project_type
+        new_elt['project_type'] = project_type
+        part_id = None
         if isinstance(e.get('Projet.Partenaire.Nom_organisme'), str):
             new_elt['name'] = e['Projet.Partenaire.Nom_organisme']
         if isinstance(e.get('Projet.Partenaire.Code_RNSR'), str):
@@ -104,8 +104,10 @@ def harvest_anr_projects(project_type, cache_participant):
             part_id = identify_participant(new_elt['name'], cache_participant)
         if part_id:
             new_elt['participant_id'] = part_id
-            #new_elt['organizations_id'] = part_id
+            new_elt['organizations_id'] = part_id
             new_elt['identified'] = True
+        else:
+            new_elt['identified'] = False
         if e['Projet.Partenaire.Est_coordinateur']:
             new_elt['role'] = 'coordinator'
         else:
