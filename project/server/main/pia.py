@@ -17,7 +17,7 @@ def update_pia(args):
 
 def get_pid(x, df_paysage, corresp):
     try:
-        siret = df_paysage[(df_paysage.index==x) & (df_paysage.id_type=='siret')].value[0]
+        siret = df_paysage[(df_paysage.index==x) & (df_paysage.id_type=='siret')].id_value.values[0]
         siren = siret[0:9]
         return corresp[siren]
     except:
@@ -27,65 +27,66 @@ def harvest_pia_projects():
     df_pia_anr = pd.read_json(URL_ANR_PROJECTS_DGPIE, orient='split')
     pia_anr_code = set(df_pia_anr['Projet.Code_Decision_ANR'].apply(lambda x:x[4:]).to_list())
     df_pia = get_ods_data('fr-esr-piaweb')
-    df_pia = pd.read_csv('/Users/eric/Downloads/fr-esr-piaweb.csv', sep=';')
-    df_pia = df_pia[df_pia['Code projet'].apply(lambda x: x not in pia_anr_code)]
+    df_pia = df_pia[df_pia['code_projet'].apply(lambda x: x not in pia_anr_code)]
     # for ids
-    df_paysage = get_ods_data('fr-esr-paysage_structures_identifiants', sep=';')
-    df_paysage = df_paysage.set_index('id_structure_paysage')
+    df_paysage = get_ods_data('fr-esr-paysage_structures_identifiants')
+    df_paysage = df_paysage.set_index('id_paysage')
     all_struct = get_all_struct()
     corresp = build_correspondance_structures(all_struct)
 
-    df_projects = df_pia[['Code projet', 'Acronyme',  'Domaine thématique',
-        'Stratégie nationale', 'Action', 'Libellé', 'Dotation', 'Résumés', 'Début du projet']].drop_duplicates()
+    df_projects = df_pia[['code_projet', 'acronyme',  'domaine_thematique',
+        'strategie_nationale', 'action', 'libelle', 'resumes', 'debut_du_projet']].drop_duplicates()
     projects = []
     for e in df_projects.to_dict(orient='records'):
         new_elt = {}
-        new_elt['id'] = e['Code projet']
+        new_elt['id'] = e['code_projet']
         new_elt['type'] = project_type
-        if isinstance(e.get('Début du projet'), str):
+        if isinstance(e.get('debut_du_projet'), str):
             try:
-                year = int(e['Début du projet'][0:4])
+                year = int(e['debut_du_projet'][0:4])
                 new_elt['year'] = year
             except:
                 pass
         acronym, title = None, None
-        if isinstance(e.get('Acronyme'), str):
-            acronym = e['Acronyme']
+        if isinstance(e.get('acronyme'), str):
+            acronym = e['acronyme']
             new_elt['acronym'] = acronym
-        if isinstance(e.get('Libellé'), str):
-            title = e['Libellé']
+        if isinstance(e.get('libelle'), str):
+            title = e['libelle']
             new_elt['name'] = {'en': title}
         elif acronym:
             new_elt['name'] = {'en': acronym}
-        if isinstance(e.get('Action'), str):
-            new_elt['action'] = [{'level': '1', 'code': e.get('Action'), 'name': e.get('Action')}]
-        #if isinstance(e.get('Dotation'), float):
-        #    new_elt['budget_financed'] = e['Dotation']
-        if isinstance(e.get('Résumés'), str):
-            new_elt['description']['en'] = e['Résumés']
+        if isinstance(e.get('action'), str):
+            new_elt['action'] = [{'level': '1', 'code': e.get('action'), 'name': e.get('action')}]
+        if isinstance(e.get('resumes'), str):
+            new_elt['description'] = {'en': e['resumes']}
         projects.append(new_elt)
     partners = []
+    nb_partners_map = {}
     for e in df_pia.to_dict(orient='records'):
-        new_elt = {}
-        new_elt['project_type'] = project_type
-        new_elt['project_id'] = e['Code projet']
+        new_part = {}
+        new_part['project_id'] = e['code_projet']
+        if e['code_projet'] not in nb_partners_map:
+            nb_partners_map[e['code_projet']] = 0
+        nb_partners_map[e['code_projet']] += 1
+        new_part['project_type'] = project_type
+        new_part['id'] = e['code_projet'] + '-' + str(nb_partners_map[e['code_projet']]).zfill(2)
         part_id = None
-        if isinstance(e.get("Établissement"), str):
-            new_part['name'] = e["Établissement"]
+        if isinstance(e.get("etablissement"), str):
+            new_part['name'] = e["etablissement"]
         new_part['role'] = 'participant'
-        if isinstance(e.get('Coordinateur (oui/non)'), str):
-            if e["Coordinateur (oui/non)"] == "Oui":
+        if isinstance(e.get('coordinateur_oui_non'), str):
+            if e["coordinateur_oui_non"] == "Oui":
                 new_part['role'] = 'coordinator'
         if isinstance(e.get('id_paysage'), str):
             paysage_id = e['id_paysage'].split(',')[0]
             part_id = get_pid(paysage_id, df_paysage, corresp)
-            part_id = identify_participant(new_part['name'], cache_participant)
         if part_id:
             new_part['participant_id'] = part_id
             new_part['organizations_id'] = part_id
             new_part['identified'] = True
         else:
             new_part['identified'] = False
-        partners.append(new_elt)
+        partners.append(new_part)
     return {'projects': projects, 'partners': partners}
     

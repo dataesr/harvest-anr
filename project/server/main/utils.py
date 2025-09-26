@@ -2,12 +2,25 @@ import json
 import os
 import requests
 import pandas as pd
+from retry import retry
 
 from project.server.main.logger import get_logger
 
 logger = get_logger(__name__)
 
 ODS_API_KEY = os.getenv('ODS_API_KEY')
+
+@retry(delay=20, tries=5)
+def get_url(url, headers):
+    return requests.get(url, headers=headers)
+
+@retry(delay=20, tries=5)
+def post_url(url, json, headers):
+    return requests.post(url, json=json, headers=headers)
+
+@retry(delay=20, tries=5)
+def delete_url(url, headers):
+    return requests.delete(url, headers=headers)
 
 def get_ods_data(key):
     logger.debug(f'getting ods data {key}')
@@ -47,20 +60,23 @@ def upload_elt(new_elt, elt_type, delete_before = False):
     url = os.getenv('DATAESR_URL') + f'/projects/{elt_type}'
     if delete_before:
         elt_id = new_elt['id']
-        old = requests.get(url + f'/{elt_id}', headers={"Authorization":os.getenv('AUTHORIZATION')}).json()
+        old = get_url(url + f'/{elt_id}', headers={"Authorization":os.getenv('AUTHORIZATION')}).json()
         try:
             etag = old['etag']
             new_headers = {"Authorization":os.getenv('AUTHORIZATION'), 'If-Match': etag}
-            delete_old = requests.delete(url + f'/{elt_id}', headers=new_headers)
+            delete_old = delete_url(url + f'/{elt_id}', headers=new_headers)
             if delete_old.status_code != 204:
                 logger.debug(delete_old.text)
         except:
             pass
-    r = requests.post(url, json = new_elt, headers={"Authorization":os.getenv('AUTHORIZATION')})
+    r = post_url(url, json = new_elt, headers={"Authorization":os.getenv('AUTHORIZATION')})
     if(r.status_code != 201):
-        logger.debug(r.text)
-        logger.debug(new_elt)
-        return 0
+        time.sleep(10)
+        r = post_url(url, json = new_elt, headers={"Authorization":os.getenv('AUTHORIZATION')})
+        if(r.status_code != 201):
+            logger.debug(r.text)
+            logger.debug(new_elt)
+            return 0
     return 1
 
 def normalize(x):

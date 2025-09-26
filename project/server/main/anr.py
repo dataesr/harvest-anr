@@ -14,14 +14,15 @@ URL_ANR_PARTNERS_DGPIE = 'https://www.data.gouv.fr/api/1/datasets/r/559459fb-b94
 
 logger = get_logger(__name__)
 
-def update_anr(args, cache_participant):
+def update_anr_dos(args, cache_participant):
     reset_db_projects_and_partners('ANR')
     new_data_anr = harvest_anr_projects('ANR', cache_participant)
-    post_data(data = new_data_anr, delete_before = True)
+    post_data(data = new_data_anr)
    
-    reset_db_projects_and_partners('PIA')
-    new_data_pia = harvest_anr_projects('PIA', cache_participant)
-    post_data(data = new_data_pia, delete_before = True)
+def update_anr_dgpie(args, cache_participant):
+    reset_db_projects_and_partners('PIA ANR')
+    new_data_pia = harvest_anr_projects('PIA ANR', cache_participant)
+    post_data(data = new_data_pia)
 
 def get_person_map(df_partners):
     person_map = {}
@@ -52,7 +53,7 @@ def harvest_anr_projects(project_type, cache_participant):
         df_partners1 = pd.read_json(URL_ANR_PARTNERS_05_09, orient='split')
         df_partners2 = pd.read_json(URL_ANR_PARTNERS_10, orient='split')
         df_partners = pd.concat([df_partners1, df_partners2])
-    elif project_type == 'PIA':
+    elif project_type == 'PIA ANR':
         df_projects = pd.read_json(URL_ANR_PROJECTS_DGPIE, orient='split')
         df_partners = pd.read_json(URL_ANR_PARTNERS_DGPIE, orient='split')
     person_map = get_person_map(df_partners)
