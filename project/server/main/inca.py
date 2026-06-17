@@ -33,7 +33,8 @@ def harvest_inca_projects(cache_participant):
     df_inca = pd.read_excel(URL_INCA).drop_duplicates()
     for e in df_inca.to_dict(orient='records'):
         new_elt = {}
-        project_id = str(e['N° subvention']).replace('\xa0', '')
+        #project_id = str(e['N° subvention']).replace('\xa0', '')
+        project_id = str(e['Reference']).replace('\xa0', '')
         if 'INCa' not in project_id:
             project_id = 'INCa-'+project_id
         new_elt['id'] = project_id
@@ -41,49 +42,39 @@ def harvest_inca_projects(cache_participant):
         new_elt['type'] = project_type
         year = None
         try:
-            tmp = int(e.get('Nom AAP & millésime')[-2:])
-            if tmp < 30:
-                year = int('20'+e.get('Nom AAP & millésime')[-2:])
+            year = int(e['Call.Year'])
         except:
-            try:
-                for y in range(0, 30):
-                    candidate = str(y).zfill(2)
-                    if candidate in e.get('Nom AAP & millésime'):
-                        year = int('20'+candidate)
-            except:
-                print(e.get('Nom AAP & millésime'))
-
+            pass
         if year:
             new_elt['year'] = year
 
         new_elt['name'] = {}
-        if isinstance(e.get('Titre du projet'), str):
-            new_elt['name']['en'] = e.get('Titre du projet')
+        if isinstance(e.get('Title'), str):
+            new_elt['name']['en'] = e.get('Title')
+            new_elt['name']['fr'] = e.get('Title')
         description = {}
-        if isinstance(e.get('Résumé en anglais ou en français'), str):
-            description['fr'] = e.get('Résumé en anglais ou en français')
-        if isinstance(e.get('Résumé en anglais'), str):
-            description['en'] = e.get('Résumé en anglais')
-        if isinstance(e.get('Résumé en français'), str):
-            description['fr'] = e.get('Résumé en français')
+        if isinstance(e.get('Summary.En'), str):
+            description['en'] = e.get('Summary.En')
+        if isinstance(e.get('Summary.Fr'), str):
+            description['fr'] = e.get('Summary.Fr')
         if description:
             new_elt['description'] = description
-        if isinstance(e.get('Nom AAP & millésime'), str):
-            new_elt['action'] = [{'level': '1', 'code': e.get('Nom AAP & millésime'), 'name': e.get('Nom AAP & millésime')}]
+        if isinstance(e.get('Call.Description'), str):
+            new_elt['action'] = [{'level': '1', 'code': e.get('Call.Reference'), 'name': e.get('Call.Description')}]
 
-        if isinstance(e.get('Montant attribué'), float) or isinstance(e.get('Montant attribué'), int):
-            if e.get('Montant attribué') == e.get('Montant attribué'):
-                new_elt['budget_financed'] = float(e.get('Montant attribué'))
-        elif isinstance(e.get('Montant attribué'), str):
-            new_elt['budget_financed'] = float(e.get('Montant attribué').replace('€', '')\
+        if isinstance(e.get('Amount'), float) or isinstance(e.get('Amount'), int):
+            if e.get('Amount') == e.get('Amount'):
+                new_elt['budget_financed'] = float(e.get('Amount'))
+        elif isinstance(e.get('Amount'), str):
+            new_elt['budget_financed'] = float(e.get('Amount').replace('€', '')\
                                                .replace('\xa0', '').replace(',', '.')\
                                                .replace(' ', '').strip())
         person = {}
-        if isinstance(e.get('Nom du porteur'), str):
-            person['last_name'] = e.get('Nom du porteur')
+        if isinstance(e.get('Investigator.Lastname'), str):
+            person['last_name'] = e.get('Investigator.Lastname')
             person['role'] = 'coordinator'
-        if isinstance(e.get('Prénom du porteur'), str):
-            person['first_name'] = e.get('Prénom du porteur')
+        if isinstance(e.get('Investigator.Firstname'), str):
+            person['first_name'] = e.get('Investigator.Firstname')
         if person:
             new_elt['persons'] = [person]
         projects.append(new_elt)
@@ -93,8 +84,8 @@ def harvest_inca_projects(cache_participant):
         new_part['project_id'] = project_id
         new_part['project_type'] = project_type
         part_id = None
-        if isinstance(e.get("Laboratoire d'appartenance"), str):
-            new_part['name'] = e["Laboratoire d'appartenance"]
+        if isinstance(e.get("Investigator.Research_Organization.Name"), str):
+            new_part['name'] = e["Investigator.Research_Organization.Name"]
             new_part['role'] = 'coordinator'
         if new_part.get('name'):
             part_id = identify_participant(new_part['name'], cache_participant)
@@ -105,8 +96,8 @@ def harvest_inca_projects(cache_participant):
         else:
             new_part['identified'] = False
         address = {}
-        if isinstance(e['Ville'], str):
-            address['city'] = e['Ville']
+        if isinstance(e['Investigator.Research_Organization.City'], str):
+            address['city'] = e['Investigator.Research_Organization.City']
         if address:
             new_part['address'] = address
         partners.append(new_part)

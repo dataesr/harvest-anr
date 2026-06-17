@@ -57,7 +57,12 @@ def harvest_dim_projects(cache_participant):
                                    'Mode de sélection du projet': 'Mode de sélection',
                                   'Axe(s) méthodologique(s)': 'Axes méthodologiques',
                                   'Champ(s) thématique(s)': 'Champs thématiques',
-                                  'Secteur(s) disciplinaire(s)': 'Secteurs disciplinaires'}, inplace=True)
+                                  'Secteur(s) disciplinaire(s)': 'Secteurs disciplinaires',
+                                  'secteur_disciplinaire': 'Secteurs disciplinaires',
+                                  'axe_methodologique': 'Axes méthodologiques',
+                                  'champ_thematique': 'Champs thématiques',
+                                  'categorie_transverse': 'Catégorie transverse'
+                                  }, inplace=True)
 
 
     cols = ['Identifiant du projet', 'Acronyme du projet', 'Titre du projet (fr)',
@@ -124,6 +129,7 @@ def harvest_dim_projects(cache_participant):
             current_part = partners_desc_pamir_1[acronym_part]
         if isinstance(current_part.get('Nom complet de l’entité'), str):
             new_part['name'] = current_part.get('Nom complet de l’entité')
+        part_id = None
         if isinstance(current_part.get('Identifiant RNSR'), str):
             part_id = current_part['Identifiant RNSR']
         if e.get('Rôle de l’entité dans le partenariat') == 'porteur':
