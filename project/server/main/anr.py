@@ -8,7 +8,9 @@ from project.server.main.logger import get_logger
 
 #URL_AAPG_ANR = 'https://data.anr.fr/api/explore/v2.1/catalog/datasets/comites_aapg0/exports/csv?lang=fr&timezone=Europe%2FBerlin&use_labels=true&delimiter=%3B'
 # ANR has changed its url withour notice...
-URL_AAPG_ANR = 'https://data.anr.fr/api/explore/v2.1/catalog/datasets/comites_aapg_projets_finances/exports/csv?lang=fr&timezone=Europe%2FBerlin&use_labels=true&delimiter=%3B'
+# URL_AAPG_ANR = 'https://data.anr.fr/api/explore/v2.1/catalog/datasets/comites_aapg_projets_finances/exports/csv?lang=fr&timezone=Europe%2FBerlin&use_labels=true&delimiter=%3B'
+# ANR has changed its url withour notice, once again...
+URL_AAPG_ANR = 'https://data.anr.fr/api/explore/v2.1/catalog/datasets/aapg-comites/exports/csv?lang=fr&timezone=Europe%2FBerlin&use_labels=true&delimiter=%3B'
 URL_ANR_PROJECTS_05_09 = 'https://www.data.gouv.fr/api/1/datasets/r/a16e0fd7-a008-499b-bbd3-b640f8651bd9'
 URL_ANR_PARTNERS_05_09 = 'https://www.data.gouv.fr/api/1/datasets/r/18e345ee-7a16-4727-8ac5-b237db974e24'
 URL_ANR_PROJECTS_10 = 'https://www.data.gouv.fr/api/1/datasets/r/afe3d11b-9ea2-48b0-9789-2816d5785466'
