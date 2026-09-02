@@ -68,7 +68,7 @@ def fetch_one_page(page_number: int, page_size: int) -> list:
     return data
 
 
-def fetch_all(page_size=50):
+def fetch_all(page_size: int = 50):
     next_page = 1
     results = []
     logger.info("Start fetching EU API...")
@@ -116,6 +116,8 @@ def extract_participants(project_id, raw_text: str) -> list:
         if address:
             participant["address"] = address
 
+        participants.append(participant)
+
     return participants
 
 
@@ -134,6 +136,7 @@ def extract_projects(data: list):
 
         if "metadata" not in d:
             logger.debug(f"No metadata for project {reference=}")
+            continue
 
         metadata = d["metadata"]
         project_id = metadata["projectId"][0]
@@ -149,15 +152,18 @@ def extract_projects(data: list):
 
         project["acronym"] = {"default": metadata["acronym"][0]}
         project["label"] = {"default": metadata["title"][0]}
-        project["description"] = {"default": metadata["objective"][0]}
+        if len(metadata["objective"]):
+            project["description"] = {"default": metadata["objective"][0]}
 
         project["participantCount"] = metadata["numberOfContributors"][0]
         project["participants"] = extract_participants(project_id, metadata["participants"][0])
 
-        project["budgetTotal"] = metadata["overallBudget"][0]
-        project["budgetFinanced"] = metadata["euContributionAmount"][0]
+        if len(metadata["overallBudget"]):
+            project["budgetTotal"] = metadata["overallBudget"][0]
+        if len(metadata["euContributionAmount"]):
+            project["budgetFinanced"] = metadata["euContributionAmount"][0]
 
-        project["callIdentifier"] = {"id": project["callIdentifier"][0]}
+        project["callIdentifier"] = {"id": metadata["callIdentifier"][0]}
 
         action_code = metadata["typeOfActions"][0]
         action_label = metadata["typeOfAction"][0]
@@ -174,6 +180,8 @@ def extract_projects(data: list):
         # TODO:
         # priorities ?
 
+        projects.append(project)
+
     logger.debug(f"{len(projects)} EU projects extracted")
     return projects
 
@@ -182,8 +190,9 @@ def harvest_eu_projects():
     results = fetch_all()
     projects = extract_projects(results)
 
-    logger.debug("project_sample:")
-    logger.debug(f"{projects[0]}")
+    if len(projects):
+        logger.debug("project_sample:")
+        logger.debug(f"{projects[0]}")
 
     return projects
 
