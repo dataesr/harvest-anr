@@ -1,6 +1,6 @@
 import json
 import requests
-import retry
+from retry import retry
 from project.server.main.utils import to_jsonl
 from project.server.main.logger import get_logger
 
