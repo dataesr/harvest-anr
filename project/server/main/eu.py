@@ -1,6 +1,7 @@
 import json
 import requests
 from retry import retry
+from project.server.main.participants import identify_participant
 from project.server.main.utils import to_jsonl
 from project.server.main.logger import get_logger
 
@@ -55,9 +56,9 @@ eu_files = {
 eu_params = {"apiKey": "SEDIA_NONH2020_PROD", "text": "***", "pageSize": 1, "pageNumber": 1}
 
 
-@retry(delay=20, retry=3)
+@retry(delay=20, tries=3)
 def fetch_one_page(page_number: int, page_size: int) -> list:
-    params = {**eu_params, "page_number": page_number, "page_size": page_size}
+    params = {**eu_params, "pageSize": page_number, "pageNumber": page_size}
     response = requests.post(
         url=eu_url,
         headers=eu_headers,
@@ -84,7 +85,7 @@ def fetch_all(page_size: int = 50):
     return results
 
 
-def extract_participants(project_id, raw_text: str) -> list:
+def extract_participants(project_id: str, raw_text: str, cache_participant: dict) -> list:
     participants = []
 
     if not len(raw_text):
@@ -104,6 +105,11 @@ def extract_participants(project_id, raw_text: str) -> list:
         participant["id"] = f"{project_id}-{index+1:02d}"
         participant["label"] = {"default": d["legalName"]}
 
+        participant_id = identify_participant(d["lagalName"], cache_participant)
+        if participant_id:
+            participant["participant_id"] = participant_id
+        # TODO: identify other participants
+
         address = {}
         postal_address = d.get("postalAddress", {})
         country = postal_address.get("countryCode", {})
@@ -121,7 +127,7 @@ def extract_participants(project_id, raw_text: str) -> list:
     return participants
 
 
-def extract_projects(data: list):
+def extract_projects(data: list, cache_participant: dict) -> list:
     projects = []
 
     if not len(data):
@@ -148,7 +154,7 @@ def extract_projects(data: list):
         project["startDate"] = metadata["startDate"][0]
         project["endDate"] = metadata["endDate"][0]
         project["signatureDate"] = metadata["ecSignatureDate"][0]
-        project["year"] = project["startDate"].slice(0, 4)
+        project["year"] = project["startDate"][0:4]
 
         project["acronym"] = {"default": metadata["acronym"][0]}
         project["label"] = {"default": metadata["title"][0]}
@@ -156,7 +162,7 @@ def extract_projects(data: list):
             project["description"] = {"default": metadata["objective"][0]}
 
         project["participantCount"] = metadata["numberOfContributors"][0]
-        project["participants"] = extract_participants(project_id, metadata["participants"][0])
+        project["participants"] = extract_participants(project_id, metadata["participants"][0], cache_participant)
 
         if len(metadata["overallBudget"]):
             project["budgetTotal"] = metadata["overallBudget"][0]
@@ -186,17 +192,17 @@ def extract_projects(data: list):
     return projects
 
 
-def harvest_eu_projects():
+def harvest_eu_projects(cache_participant: dict) -> list:
     results = fetch_all()
-    projects = extract_projects(results)
+    projects = extract_projects(results, cache_participant)
 
     if len(projects):
-        logger.debug("project_sample:")
+        logger.debug("projects sample:")
         logger.debug(f"{projects[0]}")
 
     return projects
 
 
-def update_eu():
-    new_data_eu = harvest_eu_projects()
-    # to_jsonl(new_data_eu, "projects.jsonl")
+def update_eu(args, cache_participant: dict):
+    new_data_eu = harvest_eu_projects(cache_participant)
+    to_jsonl(new_data_eu, "projects.jsonl")
