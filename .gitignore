@@ -2,3 +2,4 @@
 .mypy*
 .vscode
 venv
+__pycache__
