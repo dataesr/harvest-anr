@@ -1,3 +1,4 @@
+from project.server.main.eu import update_eu
 import time
 import datetime
 import os
@@ -47,6 +48,8 @@ def create_task_update_v2(arg):
         update_inov_v2(arg, cache_participant)
     if arg.get('pia') or arg.get('all'):
         update_pia_v2(arg, cache_participant)
+    if arg.get('eu') or arg.get('all'):
+        update_eu(arg, cache_participant)
     os.system(f'gzip projects.jsonl')
     upload_object(container='scanr-data', source = f'projects.jsonl.gz', destination=f'production/projects-v2.jsonl.gz')
 
@@ -71,7 +74,9 @@ def create_task_update(arg):
     if arg.get('inov') or arg.get('all'):
         update_inov(arg, cache_participant)
     if arg.get('pia') or arg.get('all'):
-        update_pia(arg)
+        update_pia(arg, cache_participant)
+    if arg.get('eu') or arg.get('all'):
+        update_eu(arg, cache_participant)
     if arg.get('task'):
         url = 'http://185.161.45.213/projects/tasks'
         r = requests.post(url, json={"task_name": "identify_participants"},  headers={"Authorization":os.getenv('AUTHORIZATION')})
