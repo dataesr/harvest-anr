@@ -1,15 +1,13 @@
-FROM ubuntu:20.04
+FROM ubuntu:18.04
+ARG DEBIAN_FRONTEND=noninteractive
 
-# Évite les prompts interactifs (tzdata, etc.) qui bloquent le build sur focal
-ENV DEBIAN_FRONTEND=noninteractive
+RUN  apt-get update \
+  && apt-get install -y wget \
+     gnupg2
 
-RUN apt-get update \
-    && apt-get install -y wget gnupg2
-
-# --- Dépôt MongoDB 4.2 ---  ⚠️ voir la note plus bas
 RUN wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | apt-key add -
-RUN echo "deb [ arch=amd64,arm64 ] http://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.2 multiverse" \
-    | tee /etc/apt/sources.list.d/mongodb-org-4.2.list
+
+RUN echo "deb [ arch=amd64,arm64 ] http://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.2 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-4.2.list
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
@@ -37,16 +35,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN curl https://bootstrap.pypa.io/pip/3.8/get-pip.py -o get-pip.py && python3.8 get-pip.py
 
-# --- Node 20 : compatible avec la glibc de focal + npm récent (comprend le protocole npm:) ---
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs
+# Install last version of NodeJS
+RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
+RUN apt-get install -y nodejs
 
 WORKDIR /src
+
+ENV LC_ALL=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US.UTF-8
 
 COPY requirements.txt /src/requirements.txt
 RUN pip3 install --upgrade pip
 RUN pip3 install -r requirements.txt --proxy=${HTTP_PROXY}
-
 RUN npm install elasticdump -g
 
 COPY . /src
