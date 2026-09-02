@@ -105,7 +105,7 @@ def extract_participants(project_id: str, raw_text: str, cache_participant: dict
         participant["id"] = f"{project_id}-{index+1:02d}"
         participant["label"] = {"default": d["legalName"]}
 
-        participant_id = identify_participant(d["lagalName"], cache_participant)
+        participant_id = identify_participant(d["legalName"], cache_participant)
         if participant_id:
             participant["participant_id"] = participant_id
         # TODO: identify other participants
